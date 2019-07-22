@@ -14,7 +14,6 @@ def generate_xml(filtername, mail_list):
     :return: xml-formatted string which contains the filter
     """
 
-
     # header generation
     filter_string = \
 """<?xml version='1.0' encoding='UTF-8'?>
@@ -26,9 +25,10 @@ def generate_xml(filtername, mail_list):
         <name>Thomas Lips</name>
     </author>
     """
-
-    # make filter entry
+    # generate maillist
     mail_list = format_addresses(mail_list)
+
+    # make filter entry - FROM
     filter_string += \
     f"""<entry>
     <category term='filter'></category>
@@ -39,12 +39,29 @@ def generate_xml(filtername, mail_list):
     <apps:property name='shouldNeverSpam' value='true'/>
     <apps:property name='label' value='{filtername}'/> 
     <apps:property name='from' value = '{mail_list}'/>
-    <apps:property name='to' value = '{mail_list}'/>
     \n"""
 
-    # close entry
+    # close entry - FROM
 
     filter_string += """\t </entry> \n """
+
+    # make filter entry - TO
+    filter_string += \
+        f"""<entry>
+        <category term='filter'></category>
+        <title>Mail Filter</title>
+        <id></id>
+        <updated></updated>
+        <content></content>
+        <apps:property name='shouldNeverSpam' value='true'/>
+        <apps:property name='label' value='{filtername}'/> 
+        <apps:property name='to' value = '{mail_list}'/>
+        \n"""
+
+    # close entry - TO
+
+    filter_string += """\t </entry> \n """
+
     # close header
 
     filter_string += "</feed>"
@@ -56,6 +73,7 @@ def generate_addresses(csv_file):
     :param csv_file: filename of a csv file which contains a column with header titled Email (or contains the word email)
     :return: a list of email addresses for all non-empty fields in that column
     """
+    exception_list = ['ugent.be', 'gmail.com', 'outlook.com']
     df = read_csv(csv_file)
     mails = df['E-mailadres contactpersoon'] #TODO: select mail column in more flexible way
     list = []
@@ -67,7 +85,10 @@ def generate_addresses(csv_file):
             for item in mail.replace(';', ' ').split(','):
                 try:
                     domain = item.split('@')[1]
-                    list.append(domain)
+                    if  domain in exception_list:
+                        list.append(item) # if mail uses a public or general domain, use full mail address to avoid false positives
+                    else:
+                        list.append(domain)
                 except:
                     print('invalid email')
     return list
@@ -92,12 +113,19 @@ def write_xml(content, filename):
 
 
 if __name__ == "__main__":
+    USER_INPUT = True
 
-    # TODO: make user input for following fields
     csv = 'companies.csv'
     filtername = 'filtername'
     xmlname = 'test.xml'
 
+    if USER_INPUT:
+        csv = input("enter filename of csv (+ extension!) \n")
+        filtername = input('enter name for the filter \n')
+        xmlname = f"{filtername}.xml"
+
     mail_list = generate_addresses(csv)
     string = generate_xml(filtername,mail_list)
     write_xml(string, xmlname)
+
+    print('filter created!')
