@@ -82,7 +82,7 @@ def generate_addresses(csv_file):
             print('empty email')
         else:
             # print(mail)
-            for item in mail.replace(';', ' ').split(','):
+            for item in mail.replace(';', ',').split(','):
                 try:
                     domain = item.split('@')[1]
                     if  domain in exception_list:
